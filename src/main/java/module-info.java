@@ -5,4 +5,6 @@ module com.example.integradora {
 
     opens com.example.integradora to javafx.fxml;
     exports com.example.integradora;
+    exports com.example.integradora.Controllers;
+    opens com.example.integradora.Controllers to javafx.fxml;
 }
