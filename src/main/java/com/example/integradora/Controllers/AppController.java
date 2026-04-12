@@ -33,12 +33,11 @@ public class AppController {
     @FXML private Label lblMsg;
 
     @FXML private Button btnGuardar;
-    @FXML private Button btnInactivar;
 
     private PacienteService service = new PacienteService();
     private PacienteRepository repo = new PacienteRepository();
     private ObservableList<Paciente> pacientesData = FXCollections.observableArrayList();
-    private boolean isEditing = false;
+    private String curpEdicion = "";
 
     @FXML
     public void initialize() {
@@ -51,35 +50,31 @@ public class AppController {
         cbEstatus.setItems(FXCollections.observableArrayList("ACTIVO", "INACTIVO"));
         cbEstatus.setValue("ACTIVO");
 
-        tblPacientes.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
-            if (newSelection != null) {
-                llenarFormulario(newSelection);
-                isEditing = true;
-                txtCurp.setDisable(true);
+        tblPacientes.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
+            if (newSel != null) {
+                llenarFormulario(newSel);
+                curpEdicion = newSel.getCurp();
                 btnGuardar.setText("Actualizar");
-                btnInactivar.setDisable(false);
             }
         });
 
         tblPacientes.setItems(pacientesData);
-        cargarDatosDesdeArchivo();
+        cargarDatos();
     }
 
-    private void cargarDatosDesdeArchivo() {
+    private void cargarDatos() {
         try {
             List<Paciente> lista = repo.findAll();
             pacientesData.setAll(lista);
-            actualizarContadoresResumen(lista);
-            showFormatMessage("Datos cargados correctamente", true);
+            actualizarResumen(lista);
         } catch (IOException e) {
-            showFormatMessage("Error al leer el archivo", false);
+            mensaje("Error al cargar datos", false);
         }
     }
 
-    private void actualizarContadoresResumen(List<Paciente> lista) {
+    private void actualizarResumen(List<Paciente> lista) {
         int total = lista.size();
         int activos = (int) lista.stream().filter(p -> p.getEstatus().equals("ACTIVO")).count();
-
         lblTotal.setText("Total: " + total);
         lblActivos.setText("Activos: " + activos);
         lblInactivos.setText("Inactivos: " + (total - activos));
@@ -89,50 +84,32 @@ public class AppController {
     private void onGuardar() {
         try {
             String curp = txtCurp.getText().trim();
-            String nombre = txtNombre.getText().trim();
-            int edad = txtEdad.getText().isBlank() ? 0 : Integer.parseInt(txtEdad.getText());
+            String nombre = txtNombre.getText().replace(",", " ").trim();
+
+            String edadText = txtEdad.getText().trim();
+            if (edadText.isBlank()) throw new IllegalArgumentException("La edad no puede estar vacía.");
+            int edad = Integer.parseInt(edadText);
+
             String tel = txtTelefono.getText().trim();
-            String alergias = txtAlergias.getText().trim();
+            String alergias = txtAlergias.getText().replace(",", " ").trim();
             String estatus = cbEstatus.getValue();
 
             Paciente p = new Paciente(curp, nombre, edad, tel, alergias, estatus);
 
-            if (isEditing) {
-                service.actualizar(p);
-                showFormatMessage("Paciente actualizado", true);
+            if (!curpEdicion.isEmpty()) {
+                service.actualizar(curpEdicion, p);
+                mensaje("Paciente actualizado", true);
             } else {
                 service.registrar(p);
-                showFormatMessage("Paciente registrado", true);
+                mensaje("Paciente registrado", true);
             }
 
-            cargarDatosDesdeArchivo();
+            cargarDatos();
             onNuevo();
         } catch (NumberFormatException e) {
-            showFormatMessage("La edad debe ser un número", false);
-        } catch (IllegalArgumentException e) {
-            showFormatMessage(e.getMessage(), false);
-        } catch (IOException e) {
-            showFormatMessage("Error de persistencia", false);
-        }
-    }
-
-    @FXML
-    private void onInactivar() {
-        Paciente sel = tblPacientes.getSelectionModel().getSelectedItem();
-        if (sel != null) {
-            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-            alert.setTitle("Confirmar cambio");
-            alert.setHeaderText("¿Cambiar estatus de " + sel.getNombre() + "?");
-
-            if (alert.showAndWait().get() == ButtonType.OK) {
-                try {
-                    service.cambiarEstatus(sel.getCurp());
-                    cargarDatosDesdeArchivo();
-                    onNuevo();
-                } catch (IOException e) {
-                    showFormatMessage("Error al actualizar estatus", false);
-                }
-            }
+            mensaje("La edad debe ser un número", false);
+        } catch (Exception e) {
+            mensaje(e.getMessage(), false);
         }
     }
 
@@ -140,19 +117,15 @@ public class AppController {
     private void onEliminar() {
         Paciente sel = tblPacientes.getSelectionModel().getSelectedItem();
         if (sel != null) {
-            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-            alert.setTitle("Eliminar");
-            alert.setHeaderText(null);
-            alert.setContentText("¿Eliminar a " + sel.getNombre() + "?");
-
-            if (alert.showAndWait().get() == ButtonType.OK) {
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "¿Eliminar (inactivo) a " + sel.getNombre() + "?", ButtonType.YES, ButtonType.NO);
+            if (alert.showAndWait().get() == ButtonType.YES) {
                 try {
-                    service.eliminarFisico(sel.getCurp());
-                    cargarDatosDesdeArchivo();
+                    service.borradoLogico(sel.getCurp());
+                    cargarDatos();
                     onNuevo();
-                    showFormatMessage("Eliminado", true);
+                    mensaje("Paciente eliminado lógicamente", true);
                 } catch (IOException e) {
-                    showFormatMessage("Error", false);
+                    mensaje("Error", false);
                 }
             }
         }
@@ -167,11 +140,8 @@ public class AppController {
         txtTelefono.clear();
         txtAlergias.clear();
         cbEstatus.setValue("ACTIVO");
-
-        txtCurp.setDisable(false);
+        curpEdicion = "";
         btnGuardar.setText("Guardar");
-        btnInactivar.setDisable(true);
-        isEditing = false;
     }
 
     private void llenarFormulario(Paciente p) {
@@ -183,8 +153,8 @@ public class AppController {
         cbEstatus.setValue(p.getEstatus());
     }
 
-    private void showFormatMessage(String msg, boolean success) {
-        lblMsg.setText(msg);
-        lblMsg.setStyle("-fx-text-fill: " + (success ? "green" : "red") + "; -fx-font-weight: bold;");
+    private void mensaje(String m, boolean s) {
+        lblMsg.setText(m);
+        lblMsg.setStyle("-fx-text-fill: " + (s ? "green" : "red") + "; -fx-font-weight: bold;");
     }
 }
