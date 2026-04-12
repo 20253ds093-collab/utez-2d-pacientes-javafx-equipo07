@@ -16,11 +16,14 @@ public class Paciente {
         this.alergias = alergias;
         this.estatus = estatus;
     }
+    public String getCurp() { return curp; }
+    public String getNombre() { return nombre; }
+    public int getEdad() { return edad; }
+    public String getTelefono() { return telefono; }
+    public String getAlergias() { return alergias; }
+    public String getEstatus() { return estatus; }
 
-    public void setCurp(String curp) {
-        this.curp = curp;
-    }
-
+    public void setCurp(String curp) {this.curp = curp;}
     public void setNombre(String nombre) {
         this.nombre = nombre;
     }
@@ -40,13 +43,6 @@ public class Paciente {
     public void setEstatus(String estatus) {
         this.estatus = estatus;
     }
-
-    public String getCurp() { return curp; }
-    public String getNombre() { return nombre; }
-    public int getEdad() { return edad; }
-    public String getTelefono() { return telefono; }
-    public String getAlergias() { return alergias; }
-    public String getEstatus() { return estatus; }
 
 
     public String toCsv() {
