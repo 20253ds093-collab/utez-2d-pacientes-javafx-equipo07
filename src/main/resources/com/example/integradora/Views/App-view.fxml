@@ -2,14 +2,15 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
 
 <VBox spacing="10.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.integradora.Controllers.AppController">
     <children>
         <HBox spacing="20.0">
             <children>
-                <Label fx:id="lblTotal" text="Total: 0" />
-                <Label fx:id="lblActivos" text="Activos: 0" />
-                <Label fx:id="lblInactivos" text="Inactivos: 0" />
+                <Label fx:id="lblTotal" text="Total: 0" style="-fx-font-weight: bold;" />
+                <Label fx:id="lblActivos" text="Activos: 0" style="-fx-font-weight: bold; -fx-text-fill: green;" />
+                <Label fx:id="lblInactivos" text="Inactivos: 0" style="-fx-font-weight: bold; -fx-text-fill: gray;" />
             </children>
         </HBox>
 
@@ -45,7 +46,6 @@
 
                         <HBox spacing="10.0">
                             <children>
-                                <Button fx:id="btnInactivar" disable="true" onAction="#onInactivar" text="Cambiar Estatus" />
                                 <Button onAction="#onEliminar" text="Eliminar" />
                             </children>
                         </HBox>
@@ -55,6 +55,6 @@
         </HBox>
     </children>
     <padding>
-        <javafx.geometry.Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
     </padding>
 </VBox>
